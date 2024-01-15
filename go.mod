@@ -1,6 +1,6 @@
 module github.com/VictoriaMetrics/VictoriaMetrics
 
-go 1.20
+go 1.21
 
 require (
 	cloud.google.com/go/storage v1.35.1

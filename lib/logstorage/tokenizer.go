@@ -1,10 +1,18 @@
 package logstorage
 
 import (
-	"sort"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage/extset"
 	"sync"
-	"unicode"
 )
+
+var separators [256]bool
+
+func init() {
+	splits := "'.,?!:;\"()[]{}-/\\%$#&*/\\~^|!=+-*/<>` "
+	for _, s := range splits {
+		separators[s] = true
+	}
+}
 
 // tokenizeStrings extracts word tokens from a, appends them to dst and returns the result.
 func tokenizeStrings(dst, a []string) []string {
@@ -17,16 +25,16 @@ func tokenizeStrings(dst, a []string) []string {
 		}
 		tokenizeString(m, s)
 	}
-	dstLen := len(dst)
+	//dstLen := len(dst)
 	for k := range t.m {
 		dst = append(dst, k)
 	}
 	putTokenizer(t)
 
 	// Sort tokens with zero memory allocations
-	ss := getStringsSorter(dst[dstLen:])
-	sort.Sort(ss)
-	putStringsSorter(ss)
+	//ss := getStringsSorter(dst[dstLen:])
+	//sort.Sort(ss)
+	//putStringsSorter(ss)
 
 	return dst
 }
@@ -70,8 +78,20 @@ func tokenizeString(dst map[string]struct{}, s string) {
 }
 
 func isTokenRune(c rune) bool {
-	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
+	//var num uint = 300 // 示例数字为300
+
+	//if (c &^ 0xFF) != 0 {
+	//	return true
+	//}
+	if c > 255 {
+		return true
+	}
+	return !separators[c]
 }
+
+//func isTokenRune(c rune) bool {
+//	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
+//}
 
 func getTokenizer() *tokenizer {
 	v := tokenizerPool.Get()
@@ -151,3 +171,61 @@ func putTokensBuf(tb *tokensBuf) {
 }
 
 var tokensBufPool sync.Pool
+
+// tokenizeStrings extracts word tokens from a, appends them to dst and returns the result.
+func tokenizeStringsNew(dst, a []string) []string {
+	set := extset.GetSet()
+	for i, s := range a {
+		if i > 0 && s == a[i-1] {
+			// This string has been already tokenized
+			continue
+		}
+		tokenizeStringNew(set, s)
+	}
+	//dstLen := len(dst)
+	iter := set.Iterator()
+	for iter.Next() {
+		dst = append(dst, iter.At())
+	}
+	for k := range set.Data {
+		if set.Data[k] != "" {
+			dst = append(dst, set.Data[k])
+		}
+	}
+	extset.PutSet(set)
+	//putTokenizer(t)
+
+	// Sort tokens with zero memory allocations
+	//ss := getStringsSorter(dst[dstLen:])
+	//sort.Sort(ss)
+	//putStringsSorter(ss)
+
+	return dst
+}
+
+func tokenizeStringNew(dst *extset.Set, s string) {
+	for len(s) > 0 {
+		// Search for the next token.
+		nextIdx := len(s)
+		for i, c := range s {
+			if isTokenRune(c) {
+				nextIdx = i
+				break
+			}
+		}
+		s = s[nextIdx:]
+		// Search for the end of the token
+		nextIdx = len(s)
+		for i, c := range s {
+			if !isTokenRune(c) {
+				nextIdx = i
+				break
+			}
+		}
+		token := s[:nextIdx]
+		if len(token) > 0 {
+			dst.Add(token)
+		}
+		s = s[nextIdx:]
+	}
+}
