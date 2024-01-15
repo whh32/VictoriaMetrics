@@ -1,8 +1,9 @@
 package extset
 
 import (
-	"github.com/cespare/xxhash/v2"
+	"hash/crc32"
 	"sync"
+	"unsafe"
 )
 
 // 帮我做下整体的实现. 用slice实现一个set,并且实现set的insert,delete,遍历等方法，要求底层实现为slice，且类型为string,hash冲突时使用开放寻址法解决
@@ -45,8 +46,15 @@ func (s *Set) Add(value string) {
 	}
 }
 
+//func YoloBytes(s string) []byte {
+//	return
+//}
+
 func (s *Set) add(value string) bool {
-	index := int(xxhash.Sum64String(value)) & (len(s.Data) - 1)
+	//hash:=crc32.ChecksumIEEE(*(*[]byte)(unsafe.Pointer(&value)))
+
+	//index := int(xxhash.Sum64String(value)) & (len(s.Data) - 1)
+	index := int(crc32.ChecksumIEEE(*(*[]byte)(unsafe.Pointer(&value)))) & (len(s.Data) - 1)
 	for s.Data[index] != "" {
 		if s.Data[index] == value {
 			return false

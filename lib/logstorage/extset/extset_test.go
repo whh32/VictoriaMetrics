@@ -40,3 +40,11 @@ func BenchmarkTest(b *testing.B) {
 	b.Log("nextResize:", set.nextResize)
 	b.Log("conflict:", set.conflict)
 }
+
+func TestHash(t *testing.T) {
+	size := 10
+	for i := 0; i < size; i++ {
+		t.Log(StrHash(strconv.Itoa(i) + "-test"))
+		//set.Add(strconv.Itoa(i) + "-test")
+	}
+}
