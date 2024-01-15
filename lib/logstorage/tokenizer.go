@@ -15,7 +15,7 @@ func init() {
 }
 
 // tokenizeStrings extracts word tokens from a, appends them to dst and returns the result.
-func tokenizeStrings(dst, a []string) []string {
+func tokenizeStringsOld(dst, a []string) []string {
 	t := getTokenizer()
 	m := t.m
 	for i, s := range a {
@@ -23,7 +23,7 @@ func tokenizeStrings(dst, a []string) []string {
 			// This string has been already tokenized
 			continue
 		}
-		tokenizeString(m, s)
+		tokenizeStringOld(m, s)
 	}
 	//dstLen := len(dst)
 	for k := range t.m {
@@ -50,7 +50,7 @@ func (t *tokenizer) reset() {
 	}
 }
 
-func tokenizeString(dst map[string]struct{}, s string) {
+func tokenizeStringOld(dst map[string]struct{}, s string) {
 	for len(s) > 0 {
 		// Search for the next token.
 		nextIdx := len(s)
@@ -173,14 +173,14 @@ func putTokensBuf(tb *tokensBuf) {
 var tokensBufPool sync.Pool
 
 // tokenizeStrings extracts word tokens from a, appends them to dst and returns the result.
-func tokenizeStringsNew(dst, a []string) []string {
+func tokenizeStrings(dst, a []string) []string {
 	set := extset.GetSet()
 	for i, s := range a {
 		if i > 0 && s == a[i-1] {
 			// This string has been already tokenized
 			continue
 		}
-		tokenizeStringNew(set, s)
+		tokenizeString(set, s)
 	}
 	//dstLen := len(dst)
 	iter := set.Iterator()
@@ -203,7 +203,7 @@ func tokenizeStringsNew(dst, a []string) []string {
 	return dst
 }
 
-func tokenizeStringNew(dst *extset.Set, s string) {
+func tokenizeString(dst *extset.Set, s string) {
 	for len(s) > 0 {
 		// Search for the next token.
 		nextIdx := len(s)
