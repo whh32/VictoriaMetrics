@@ -1,4 +1,4 @@
-module github.com/whh32/VictoriaMetrics
+module github.com/VictoriaMetrics/VictoriaMetrics
 
 go 1.21
 
