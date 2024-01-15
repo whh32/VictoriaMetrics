@@ -2,6 +2,7 @@ package logstorage
 
 import (
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -10,6 +11,7 @@ func TestTokenizeStrings(t *testing.T) {
 	f := func(a, tokensExpected []string) {
 		t.Helper()
 		tokens := tokenizeStrings(nil, a)
+		sort.Strings(tokens)
 		if !reflect.DeepEqual(tokens, tokensExpected) {
 			t.Fatalf("unexpected tokens;\ngot\n%q\nwant\n%q", tokens, tokensExpected)
 		}

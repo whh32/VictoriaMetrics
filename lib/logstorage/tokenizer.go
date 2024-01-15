@@ -1,32 +1,42 @@
 package logstorage
 
 import (
-	"sort"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage/hashset"
 	"sync"
 	"unicode"
 )
 
+var charTokens [128]bool
+
+func init() {
+	splits := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+	for _, s := range splits {
+		charTokens[s] = true
+	}
+}
+
 // tokenizeStrings extracts word tokens from a, appends them to dst and returns the result.
 func tokenizeStrings(dst, a []string) []string {
-	t := getTokenizer()
-	m := t.m
+	set := hashset.GetHashSet()
 	for i, s := range a {
 		if i > 0 && s == a[i-1] {
 			// This string has been already tokenized
 			continue
 		}
-		tokenizeString(m, s)
+		tokenizeString(set, s)
 	}
-	dstLen := len(dst)
-	for k := range t.m {
-		dst = append(dst, k)
+	//dstLen := len(dst)
+	iter := set.Iterator()
+	for iter.Next() {
+		dst = append(dst, iter.At())
 	}
-	putTokenizer(t)
+	hashset.PutHashSet(set)
+	//putTokenizer(t)
 
 	// Sort tokens with zero memory allocations
-	ss := getStringsSorter(dst[dstLen:])
-	sort.Sort(ss)
-	putStringsSorter(ss)
+	//ss := getStringsSorter(dst[dstLen:])
+	//sort.Sort(ss)
+	//putStringsSorter(ss)
 
 	return dst
 }
@@ -42,35 +52,30 @@ func (t *tokenizer) reset() {
 	}
 }
 
-func tokenizeString(dst map[string]struct{}, s string) {
-	for len(s) > 0 {
-		// Search for the next token.
-		nextIdx := len(s)
-		for i, c := range s {
-			if isTokenRune(c) {
-				nextIdx = i
-				break
+func tokenizeString(dst *hashset.HashSet, s string) {
+	start := -1 // valid span start if >= 0
+	for end, c := range s {
+		if c < 128 && charTokens[c] || unicode.IsLetter(c) {
+			if start < 0 {
+				start = end
+			}
+		} else {
+			if start >= 0 {
+				dst.Add(s[start:end])
+				start = ^start
 			}
 		}
-		s = s[nextIdx:]
-		// Search for the end of the token
-		nextIdx = len(s)
-		for i, c := range s {
-			if !isTokenRune(c) {
-				nextIdx = i
-				break
-			}
-		}
-		token := s[:nextIdx]
-		if len(token) > 0 {
-			dst[token] = struct{}{}
-		}
-		s = s[nextIdx:]
+	}
+	if start >= 0 {
+		dst.Add(s[start:])
 	}
 }
 
 func isTokenRune(c rune) bool {
-	return unicode.IsLetter(c) || unicode.IsDigit(c) || c == '_'
+	if c > 128 {
+		return unicode.IsLetter(c)
+	}
+	return charTokens[c]
 }
 
 func getTokenizer() *tokenizer {

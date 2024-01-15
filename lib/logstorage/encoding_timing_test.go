@@ -40,8 +40,7 @@ func BenchmarkStringsBlockUnmarshaler_Unmarshal(b *testing.B) {
 	})
 }
 
-const benchLogs = `
-Apr 28 13:39:06 localhost systemd[1]: Started Network Manager Script Dispatcher Service.
+const benchLogs = `Apr 28 13:39:06 localhost systemd[1]: Started Network Manager Script Dispatcher Service.
 Apr 28 13:39:06 localhost nm-dispatcher: req:1 'connectivity-change': new request (2 scripts)
 Apr 28 13:39:06 localhost nm-dispatcher: req:1 'connectivity-change': start running ordered scripts...
 Apr 28 13:40:05 localhost kernel: [35544.823503] wlp4s0: AP c8:ea:f8:00:6a:31 changed bandwidth, new config is 2437 MHz, width 1 (2437/0 MHz)
