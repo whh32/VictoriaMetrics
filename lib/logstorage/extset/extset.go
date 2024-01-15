@@ -1,6 +1,7 @@
 package extset
 
 import (
+	"hash"
 	"hash/crc32"
 	"sync"
 	"unsafe"
@@ -13,6 +14,12 @@ const (
 	DefaultGrow = 4
 )
 
+var castagnoliTable *crc32.Table
+
+func init() {
+	castagnoliTable = crc32.MakeTable(crc32.Castagnoli)
+}
+
 type Set struct {
 	Data       []string
 	dataSize   int     // 当前集合数据大小
@@ -20,6 +27,7 @@ type Set struct {
 	growFactor int     // 增长因子：2的指数倍
 	nextResize int     // 下一次调整大小的阈值
 	conflict   int     //冲突次数,后续可进行删除
+	hash       hash.Hash32
 }
 
 // NewSet 初始化集合
@@ -29,6 +37,7 @@ func NewSet(size int, loadFactor float32, growth int) *Set {
 		loadFactor: loadFactor,
 		growFactor: growth,
 		dataSize:   0,
+		hash:       crc32.New(castagnoliTable),
 	}
 	s.setNextResize()
 	return s
@@ -46,15 +55,20 @@ func (s *Set) Add(value string) {
 	}
 }
 
-//func YoloBytes(s string) []byte {
-//	return
-//}
+//	func YoloBytes(s string) []byte {
+//		return
+//	}
+type sliceHeader struct {
+	s   string
+	cap int
+}
 
 func (s *Set) add(value string) bool {
 	//hash:=crc32.ChecksumIEEE(*(*[]byte)(unsafe.Pointer(&value)))
-
+	b := *(*[]byte)(unsafe.Pointer(&sliceHeader{value, len(value)}))
+	//crc32.Update()
 	//index := int(xxhash.Sum64String(value)) & (len(s.Data) - 1)
-	index := int(crc32.ChecksumIEEE(*(*[]byte)(unsafe.Pointer(&value)))) & (len(s.Data) - 1)
+	index := int(crc32.ChecksumIEEE(b)) & (len(s.Data) - 1)
 	for s.Data[index] != "" {
 		if s.Data[index] == value {
 			return false
