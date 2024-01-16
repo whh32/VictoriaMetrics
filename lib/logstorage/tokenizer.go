@@ -1,16 +1,19 @@
 package logstorage
 
 import (
-	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage/extset"
+	"github.com/VictoriaMetrics/VictoriaMetrics/lib/logstorage/hashset"
 	"sync"
 )
 
-var separators [256]bool
+var charsTokens [256]bool
 
 func init() {
 	splits := "'.,?!:;\"()[]{}-/\\%$#&*/\\~^|!=+-*/<>` "
+	for i := range charsTokens {
+		charsTokens[i] = true
+	}
 	for _, s := range splits {
-		separators[s] = true
+		charsTokens[s] = false
 	}
 }
 
@@ -78,15 +81,10 @@ func tokenizeStringOld(dst map[string]struct{}, s string) {
 }
 
 func isTokenRune(c rune) bool {
-	//var num uint = 300 // 示例数字为300
-
-	//if (c &^ 0xFF) != 0 {
-	//	return true
-	//}
 	if c > 255 {
 		return true
 	}
-	return !separators[c]
+	return charsTokens[c]
 }
 
 //func isTokenRune(c rune) bool {
@@ -174,7 +172,7 @@ var tokensBufPool sync.Pool
 
 // tokenizeStrings extracts word tokens from a, appends them to dst and returns the result.
 func tokenizeStrings(dst, a []string) []string {
-	set := extset.GetSet()
+	set := hashset.GetHashSet()
 	for i, s := range a {
 		if i > 0 && s == a[i-1] {
 			// This string has been already tokenized
@@ -187,12 +185,7 @@ func tokenizeStrings(dst, a []string) []string {
 	for iter.Next() {
 		dst = append(dst, iter.At())
 	}
-	for k := range set.Data {
-		if set.Data[k] != "" {
-			dst = append(dst, set.Data[k])
-		}
-	}
-	extset.PutSet(set)
+	hashset.PutHashSet(set)
 	//putTokenizer(t)
 
 	// Sort tokens with zero memory allocations
@@ -203,10 +196,11 @@ func tokenizeStrings(dst, a []string) []string {
 	return dst
 }
 
-func tokenizeString(dst *extset.Set, s string) {
+func tokenizeString(dst *hashset.HashSet, s string) {
 	for len(s) > 0 {
 		// Search for the next token.
 		nextIdx := len(s)
+
 		for i, c := range s {
 			if isTokenRune(c) {
 				nextIdx = i

@@ -1,4 +1,4 @@
-package extset
+package hashset
 
 import "unsafe"
 
