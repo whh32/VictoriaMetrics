@@ -36,6 +36,8 @@ const minMergeMultiplier = 1.7
 // If the number of inmemory parts reaches this value, then assisted merge runs during data ingestion.
 const maxInmemoryPartsPerPartition = 20
 
+const maxPartsSizeBytes = 16 * (1 << 30)
+
 // datadb represents a database with log data
 type datadb struct {
 	// mergeIdx is used for generating unique directory names for parts
@@ -1006,6 +1008,10 @@ func appendPartsToMerge(dst, src []*partWrapper, maxOutBytes uint64) []*partWrap
 		if pw.p.ph.CompressedSizeBytes > maxInPartBytes {
 			continue
 		}
+		if pw.p.ph.CompressedSizeBytes > maxPartsSizeBytes {
+			continue
+		}
+
 		tmp = append(tmp, pw)
 	}
 	src = tmp

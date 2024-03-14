@@ -13,6 +13,7 @@ func TestLexer(t *testing.T) {
 		lex := newLexer(s)
 		for _, tokenExpected := range tokensExpected {
 			lex.nextToken()
+			t.Log("token:", lex.token)
 			if lex.token != tokenExpected {
 				t.Fatalf("unexpected token; got %q; want %q", lex.token, tokenExpected)
 			}
@@ -22,7 +23,10 @@ func TestLexer(t *testing.T) {
 			t.Fatalf("unexpected tail token: %q", lex.token)
 		}
 	}
+	sql := "_stream:{log='abc',name='abc'} ip:\"127.0.0.1\"|fields 'field1', 'field2'"
+	ParseQuery(sql)
 
+	f("_stream:{log='abc'}|fields 'field1', 'field2'", []string{"_stream", ":", "{", "log", "=", "abc", "}", "|", "fields", "field1", ",", "field2"})
 	f("", nil)
 	f("  ", nil)
 	f("foo", []string{"foo"})
@@ -554,7 +558,7 @@ func TestParseQuerySuccess(t *testing.T) {
 			t.Fatalf("unexpected result;\ngot\n%s\nwant\n%s", result, resultExpected)
 		}
 	}
-
+	f("_stream:{log='abc'}|fields field1, field2", "")
 	f("foo", "foo")
 	f(":foo", "foo")
 	f(`"":foo`, "foo")
